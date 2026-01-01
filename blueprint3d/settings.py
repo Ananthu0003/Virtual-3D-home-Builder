@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-dev-key-change-in-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', '963315ee-9829-49b0-bddb-13fbb4bf3376-00-fxfu0bxz0kqr.kirk.replit.dev', '.replit.dev', '.repl.co']
+ALLOWED_HOSTS = ["*"]  # later restrict
 
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = ['https://963315ee-9829-49b0-bddb-13fbb4bf3376-00-fxfu0bxz0kqr.kirk.replit.dev', 'https://*.replit.dev', 'https://*.repl.co']
@@ -33,6 +33,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -98,7 +100,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (user uploads)
 MEDIA_URL = '/media/'
