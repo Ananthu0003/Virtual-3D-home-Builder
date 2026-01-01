@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-secret-key")
 DEBUG = os.environ.get("DEBUG") == "True"
 
-ALLOWED_HOSTS = ["*"]  # later restrict
+ALLOWED_HOSTS = ["virtual-3d-home-builder-1.onrender.com"]  # later restrict
 
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = ['https://963315ee-9829-49b0-bddb-13fbb4bf3376-00-fxfu0bxz0kqr.kirk.replit.dev', 'https://*.replit.dev', 'https://*.repl.co']
