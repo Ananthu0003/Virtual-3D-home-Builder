@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Processing{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-cogs me-2"></i>Processing Your Blueprint</h3>
+                <h5 class="mb-0 text-muted">{{ blueprint.title }}</h5>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="processing-status" data-blueprint-id="{{ blueprint.id }}">
+                    <!-- Status content will be updated by JavaScript -->
+                    <div id="status-indicator">
+                        <div class="spinner-border text-primary mb-4" role="status" style="width: 5rem; height: 5rem; border-width: 0.4em;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h3 id="status-message" class="mb-3">Processing your blueprint...</h3>
+                        <p id="status-details" class="text-muted lead">This may take a few minutes. We're transforming your 2D blueprint into an interactive 3D model.</p>
+                    </div>
+                    
+                    <!-- Success state (hidden initially) -->
+                    <div id="success-state" class="d-none">
+                        <div class="text-success mb-4">
+                            <i class="fas fa-check-circle fa-5x"></i>
+                        </div>
+                        <h3 class="mb-3">Processing Complete!</h3>
+                        <p class="lead mb-4">Your 3D model is ready for viewing and customization.</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a id="viewer-link" href="#" class="btn btn-primary btn-lg">
+                                <i class="fas fa-eye me-2"></i>View 3D Model
+                            </a>
+                            <a id="customize-link" href="#" class="btn btn-info btn-lg">
+                                <i class="fas fa-paint-brush me-2"></i>Customize Interior
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Error state (hidden initially) -->
+                    <div id="error-state" class="d-none">
+                        <div class="text-danger mb-4">
+                            <i class="fas fa-exclamation-circle fa-5x"></i>
+                        </div>
+                        <h3 class="mb-3">Processing Failed</h3>
+                        <p id="error-message" class="lead mb-4">An error occurred during processing.</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="/" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Upload New Blueprint
+                            </a>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-drafting-compass me-2"></i>Go to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress mt-5" style="height: 8px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4 shadow-lg">
+            <div class="card-header">
+                <h4 class="mb-0">Conversion Process</h4>
+            </div>
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center">
+                        <div class="processing-step active" id="step1">
+                            <div class="step-icon">
+                                <i class="fas fa-upload"></i>
+                            </div>
+                            <div class="step-label">Upload</div>
+                            <div class="small text-muted mt-1">Blueprint received</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="processing-step" id="step2">
+                            <div class="step-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="step-label">Analysis</div>
+                            <div class="small text-muted mt-1">Detecting elements</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="processing-step" id="step3">
+                            <div class="step-icon">
+                                <i class="fas fa-cubes"></i>
+                            </div>
+                            <div class="step-label">3D Modeling</div>
+                            <div class="small text-muted mt-1">Creating model data</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="processing-step" id="step4">
+                            <div class="step-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="step-label">Complete</div>
+                            <div class="small text-muted mt-1">Ready to view</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const blueprintId = document.querySelector('.processing-status').dataset.blueprintId;
+        const statusMessage = document.getElementById('status-message');
+        const statusDetails = document.getElementById('status-details');
+        const statusIndicator = document.getElementById('status-indicator');
+        const successState = document.getElementById('success-state');
+        const errorState = document.getElementById('error-state');
+        const errorMessage = document.getElementById('error-message');
+        const viewerLink = document.getElementById('viewer-link');
+        const customizeLink = document.getElementById('customize-link');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // Processing steps
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const step4 = document.getElementById('step4');
+        
+        let progress = 0;
+        let currentStep = 1;
+        
+        // Update progress bar animation
+        function updateProgress() {
+            if (currentStep === 1) {
+                progress = 25;
+                step1.classList.add('active');
+            } else if (currentStep === 2) {
+                progress = 50;
+                step2.classList.add('active');
+            } else if (currentStep === 3) {
+                progress = 75;
+                step3.classList.add('active');
+            } else if (currentStep === 4) {
+                progress = 100;
+                step4.classList.add('active');
+            }
+            
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+            
+            currentStep = Math.min(currentStep + 1, 4);
+        }
+        
+        // Check processing status
+        function checkStatus() {
+            fetch(`/check-status/${blueprintId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'processing') {
+                        // Update progress animation
+                        updateProgress();
+                        
+                        // Continue checking status
+                        setTimeout(checkStatus, 2000);
+                    } else if (data.status === 'completed') {
+                        // Show success state
+                        statusIndicator.classList.add('d-none');
+                        successState.classList.remove('d-none');
+                        viewerLink.href = data.viewer_url;
+                        customizeLink.href = `/customize/${blueprintId}/`;
+                        
+                        // Mark steps as completed
+                        step1.classList.add('completed');
+                        step2.classList.add('completed');
+                        step3.classList.add('completed');
+                        
+                        // Complete progress
+                        currentStep = 4;
+                        updateProgress();
+                    } else if (data.status === 'failed') {
+                        // Show error state
+                        statusIndicator.classList.add('d-none');
+                        errorState.classList.remove('d-none');
+                        
+                        if (data.error) {
+                            errorMessage.textContent = data.error;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                    
+                    // Show generic error message on connection failure
+                    statusIndicator.classList.add('d-none');
+                    errorState.classList.remove('d-none');
+                    errorMessage.textContent = 'Connection error. Please try again later.';
+                });
+        }
+        
+        // Start the process
+        updateProgress(); // Show first step immediately
+        setTimeout(checkStatus, 1000); // Start checking status
+    });
+</script>
+{% endblock %}

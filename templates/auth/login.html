@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="auth-container">
+            <div class="auth-form-container">
+                <h2 class="text-center mb-4"><i class="fas fa-sign-in-alt me-2"></i>Welcome Back</h2>
+                
+                {% if messages %}
+                <div class="messages mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="auth-tabs">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   placeholder="Enter your username" required autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Enter your password" required autocomplete="current-password">
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <span class="text-muted">Don't have an account?</span>
+                    <a href="{% url 'register' %}" class="ms-2">Create one now</a>
+                </div>
+            </div>
+            
+            <div class="auth-hero">
+                <div class="auth-hero-icon">
+                    <i class="fas fa-drafting-compass"></i>
+                </div>
+                <h2 class="mb-3">Blueprint3D</h2>
+                <p class="lead mb-4">Sign in to access your saved blueprints and 3D models!</p>
+                <div class="hero-features">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Manage your blueprint collection
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Resume your customization projects
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Control privacy settings for your models
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Share your designs with others
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

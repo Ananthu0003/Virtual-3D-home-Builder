@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}3D Model Viewer{% endblock %}
+
+{% block extra_css %}
+<style>
+    #model-viewer-container {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        overflow: hidden;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    #model-viewer {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .controls-panel {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 30px;
+        padding: 10px 15px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .controls-panel button {
+        margin: 0 5px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+    
+    .view-options {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+    }
+    
+    .loading-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.7);
+        z-index: 50;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        #model-viewer-container {
+            height: 50vh;
+        }
+        
+        .controls-panel button {
+            width: 36px;
+            height: 36px;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-cube me-2"></i>3D Model Viewer: {{ blueprint.title }}</h3>
+                <div>
+                    <a href="{% url 'customize' blueprint.id %}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-paint-brush me-1"></i>Customize Interior
+                    </a>
+                    <a href="/" class="btn btn-light btn-sm">
+                        <i class="fas fa-upload me-1"></i>Upload New Blueprint
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="model-viewer-container">
+                    <div id="model-viewer"></div>
+                    
+                    <!-- Loading Indicator -->
+                    <div class="loading-container" id="loading-container">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Loading 3D Model...</h5>
+                        </div>
+                    </div>
+                    
+                    <!-- View Options -->
+                    <div class="view-options">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-light btn-sm active" id="view-3d">
+                                <i class="fas fa-cube me-1"></i>3D View
+                            </button>
+                            <button type="button" class="btn btn-light btn-sm" id="view-top">
+                                <i class="fas fa-arrows-alt me-1"></i>Top View
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Navigation Controls -->
+                    <div class="controls-panel">
+                        <button class="btn btn-light" id="control-left" title="Move Left">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-forward" title="Move Forward">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-backward" title="Move Backward">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-right" title="Move Right">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-rotate-left" title="Rotate Left">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-rotate-right" title="Rotate Right">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Model Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th>Blueprint Title:</th>
+                                    <td>{{ blueprint.title }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created On:</th>
+                                    <td>{{ blueprint.created_at|date:"F j, Y, g:i a" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Model Status:</th>
+                                    <td><span class="badge bg-success">Ready</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-keyboard me-2"></i>Controls Guide</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Mouse Controls:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-mouse me-2 text-primary"></i>Left Click + Drag: Rotate</li>
+                                    <li><i class="fas fa-mouse me-2 text-primary"></i>Right Click + Drag: Pan</li>
+                                    <li><i class="fas fa-mouse-wheel me-2 text-primary"></i>Scroll: Zoom In/Out</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Keyboard Controls:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-keyboard me-2 text-primary"></i>W, A, S, D: Move</li>
+                                    <li><i class="fas fa-keyboard me-2 text-primary"></i>Q, E: Rotate</li>
+                                    <li><i class="fas fa-keyboard me-2 text-primary"></i>R: Reset View</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden model data to be used by Three.js -->
+<script type="application/json" id="model-data">
+    {{ model_data_json|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Three.js and OrbitControls -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+
+<!-- Main viewer script -->
+<script src="{% static 'js/three_viewer.js' %}"></script>
+{% endblock %}

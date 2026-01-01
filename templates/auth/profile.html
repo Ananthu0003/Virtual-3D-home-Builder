@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Statistics Cards -->
+    <div class="col-md-12 mb-4">
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <i class="fas fa-drafting-compass fa-2x text-primary mb-2"></i>
+                <div class="stat-value">{{ total_blueprints }}</div>
+                <div class="stat-label">Total Blueprints</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-paint-brush fa-2x text-info mb-2"></i>
+                <div class="stat-value">{{ total_customizations }}</div>
+                <div class="stat-label">Customizations</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-globe fa-2x text-success mb-2"></i>
+                <div class="stat-value">{{ public_blueprints }}</div>
+                <div class="stat-label">Public Blueprints</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-user-clock fa-2x text-warning mb-2"></i>
+                <div class="stat-value">{{ user.date_joined|date:'M Y' }}</div>
+                <div class="stat-label">Member Since</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-lg">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-id-card me-2"></i>Account Information</h3>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-drafting-compass me-1"></i>My Blueprints
+                </a>
+            </div>
+            <div class="card-body p-4">
+                {% if messages %}
+                <div class="messages mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'profile' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-bold">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
+                        </div>
+                        <div class="form-text"><i class="fas fa-info-circle me-1"></i>Username cannot be changed after registration.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Account Created</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                            <input type="text" class="form-control" value="{{ user.date_joined|date:'F j, Y' }}" disabled>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-key me-2"></i>Change Password</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'change_password' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="old_password" class="form-label fw-bold">Current Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control {% if password_errors.old_password %}is-invalid{% endif %}" 
+                                   id="old_password" name="old_password" required>
+                        </div>
+                        {% if password_errors.old_password %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_errors.old_password %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password1" class="form-label fw-bold">New Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control {% if password_errors.new_password1 %}is-invalid{% endif %}" 
+                                   id="new_password1" name="new_password1" required>
+                        </div>
+                        {% if password_errors.new_password1 %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_errors.new_password1 %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_password2" class="form-label fw-bold">Confirm New Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control {% if password_errors.new_password2 %}is-invalid{% endif %}" 
+                                   id="new_password2" name="new_password2" required>
+                        </div>
+                        {% if password_errors.new_password2 %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in password_errors.new_password2 %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

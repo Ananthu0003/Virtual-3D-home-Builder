@@ -1,0 +1,480 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Customize Interior - Blueprint3D{% endblock %}
+
+{% block custom_css %}
+<style>
+    #model-viewer-container {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        background-color: #f8f9fa;
+        overflow: hidden;
+    }
+    
+    #model-viewer {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .loading-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+    
+    .mode-selector {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 5;
+    }
+    
+    .controls-panel {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 5px;
+        z-index: 5;
+    }
+    
+    .item-card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .item-card.selected {
+        border: 2px solid #007bff;
+        background-color: #f0f7ff;
+    }
+    
+    .furniture-preview-container {
+        min-height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .color-swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .custom-tab-content {
+        height: 350px;
+        overflow-y: auto;
+    }
+    
+    .material-type-tabs .nav-link.active {
+        font-weight: bold;
+        border-bottom: 3px solid #007bff;
+    }
+    
+    .mode-indicator {
+        padding: 6px 12px;
+        border-radius: 30px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 5;
+    }
+    
+    .selected-item-info {
+        padding: 6px 12px;
+        border-radius: 30px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: 50px;
+        right: 10px;
+        z-index: 5;
+    }
+    
+    .customization-toolbar {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        padding: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-paint-brush me-2"></i>Interior Customization: {{ blueprint.title }}</h3>
+                <div>
+                    <a href="{% url 'viewer' blueprint.id %}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-cube me-1"></i>View 3D Model
+                    </a>
+                    <a href="/" class="btn btn-light btn-sm">
+                        <i class="fas fa-upload me-1"></i>Upload New Blueprint
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="model-viewer-container">
+                    <div id="model-viewer"></div>
+                    
+                    <!-- Loading Indicator -->
+                    <div class="loading-container" id="loading-container">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Loading 3D Model...</h5>
+                        </div>
+                    </div>
+                    
+                    <!-- Mode Selector -->
+                    <div class="mode-selector btn-group" role="group">
+                        <button type="button" class="btn btn-light active" id="mode-navigate" data-mode="navigate">
+                            <i class="fas fa-hand-pointer"></i>
+                        </button>
+                        <button type="button" class="btn btn-light" id="mode-place" data-mode="place">
+                            <i class="fas fa-couch"></i>
+                        </button>
+                        <button type="button" class="btn btn-light" id="mode-paint" data-mode="paint">
+                            <i class="fas fa-paint-roller"></i>
+                        </button>
+                        <button type="button" class="btn btn-light" id="mode-light" data-mode="light">
+                            <i class="fas fa-lightbulb"></i>
+                        </button>
+                        <button type="button" class="btn btn-light" id="mode-delete" data-mode="delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Mode Indicator -->
+                    <div class="mode-indicator" id="mode-indicator">
+                        <i class="fas fa-hand-pointer me-1"></i>Navigation Mode
+                    </div>
+                    
+                    <!-- Selected Item Info -->
+                    <div class="selected-item-info d-none" id="selected-item-info">
+                        <span id="selected-item-name">No item selected</span>
+                    </div>
+                    
+                    <!-- Navigation Controls -->
+                    <div class="controls-panel">
+                        <button class="btn btn-light" id="control-left" title="Move Left">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-forward" title="Move Forward">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-backward" title="Move Backward">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-right" title="Move Right">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-rotate-left" title="Rotate Left">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="btn btn-light" id="control-rotate-right" title="Rotate Right">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customization Options -->
+            <div class="card-footer p-0">
+                <nav>
+                    <div class="nav nav-tabs" id="customization-tab" role="tablist">
+                        <button class="nav-link active" id="furniture-tab" data-bs-toggle="tab" data-bs-target="#furniture-pane" type="button" role="tab">
+                            <i class="fas fa-couch me-1"></i>Furniture
+                        </button>
+                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials-pane" type="button" role="tab">
+                            <i class="fas fa-paint-roller me-1"></i>Materials
+                        </button>
+                        <button class="nav-link" id="lighting-tab" data-bs-toggle="tab" data-bs-target="#lighting-pane" type="button" role="tab">
+                            <i class="fas fa-lightbulb me-1"></i>Lighting
+                        </button>
+                        <button class="nav-link" id="saved-tab" data-bs-toggle="tab" data-bs-target="#saved-pane" type="button" role="tab">
+                            <i class="fas fa-save me-1"></i>Saved Designs
+                        </button>
+                    </div>
+                </nav>
+                
+                <div class="tab-content" id="customization-tabContent">
+                    <!-- Furniture Tab -->
+                    <div class="tab-pane fade show active p-3" id="furniture-pane" role="tabpanel" tabindex="0">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="furniture-category-select" class="form-label">Filter by Category</label>
+                                <select class="form-select" id="furniture-category-select">
+                                    <option value="all">All Categories</option>
+                                    <option value="1">Living Room</option>
+                                    <option value="2">Dining</option>
+                                    <option value="3">Bedroom</option>
+                                    <option value="4">Kitchen</option>
+                                    <option value="5">Bathroom</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="custom-tab-content">
+                            <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="furniture-items-container">
+                                <!-- Furniture items will be loaded here -->
+                                <div class="col">
+                                    <div class="card item-card h-100">
+                                        <div class="card-body text-center">
+                                            <div class="furniture-preview-container mb-2">
+                                                <i class="fas fa-couch fa-2x" style="color: #8B4513;"></i>
+                                            </div>
+                                            <h6 class="card-title">Sofa</h6>
+                                            <small class="text-muted">2m × 0.8m × 0.9m</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="card item-card h-100">
+                                        <div class="card-body text-center">
+                                            <div class="furniture-preview-container mb-2">
+                                                <i class="fas fa-chair fa-2x" style="color: #A0522D;"></i>
+                                            </div>
+                                            <h6 class="card-title">Chair</h6>
+                                            <small class="text-muted">0.6m × 0.6m × 0.8m</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- More furniture items -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Materials Tab -->
+                    <div class="tab-pane fade p-3" id="materials-pane" role="tabpanel" tabindex="0">
+                        <ul class="nav nav-pills mb-3 material-type-tabs" id="materials-subtab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="walls-subtab" data-bs-toggle="pill" data-bs-target="#walls-content" type="button" role="tab">Walls</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="floors-subtab" data-bs-toggle="pill" data-bs-target="#floors-content" type="button" role="tab">Floors</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ceilings-subtab" data-bs-toggle="pill" data-bs-target="#ceilings-content" type="button" role="tab">Ceilings</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="doors-subtab" data-bs-toggle="pill" data-bs-target="#doors-content" type="button" role="tab">Doors</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="windows-subtab" data-bs-toggle="pill" data-bs-target="#windows-content" type="button" role="tab">Windows</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content custom-tab-content" id="materials-subtabContent">
+                            <!-- Wall Materials -->
+                            <div class="tab-pane fade show active" id="walls-content" role="tabpanel" tabindex="0">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="wall-materials-container">
+                                    <!-- Wall material items -->
+                                    <div class="col">
+                                        <div class="card item-card h-100" data-material-id="1">
+                                            <div class="card-body text-center">
+                                                <span class="color-swatch" style="background-color: #FFFFFF;"></span>
+                                                <p class="card-text mb-0">White</p>
+                                                <small class="text-muted">Matte Paint</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="card item-card h-100" data-material-id="2">
+                                            <div class="card-body text-center">
+                                                <span class="color-swatch" style="background-color: #F5F5DC;"></span>
+                                                <p class="card-text mb-0">Beige</p>
+                                                <small class="text-muted">Matte Paint</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- More wall materials -->
+                                </div>
+                            </div>
+                            
+                            <!-- Floor Materials -->
+                            <div class="tab-pane fade" id="floors-content" role="tabpanel" tabindex="0">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="floor-materials-container">
+                                    <!-- Floor material items -->
+                                    <div class="col">
+                                        <div class="card item-card h-100" data-material-id="101">
+                                            <div class="card-body text-center">
+                                                <span class="color-swatch" style="background-color: #8B4513;"></span>
+                                                <p class="card-text mb-0">Oak</p>
+                                                <small class="text-muted">Hardwood</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="card item-card h-100" data-material-id="102">
+                                            <div class="card-body text-center">
+                                                <span class="color-swatch" style="background-color: #A0522D;"></span>
+                                                <p class="card-text mb-0">Walnut</p>
+                                                <small class="text-muted">Hardwood</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- More floor materials -->
+                                </div>
+                            </div>
+                            
+                            <!-- Ceiling Materials -->
+                            <div class="tab-pane fade" id="ceilings-content" role="tabpanel" tabindex="0">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="ceiling-materials-container">
+                                    <!-- Ceiling material items -->
+                                </div>
+                            </div>
+                            
+                            <!-- Door Materials -->
+                            <div class="tab-pane fade" id="doors-content" role="tabpanel" tabindex="0">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="door-materials-container">
+                                    <!-- Door material items -->
+                                </div>
+                            </div>
+                            
+                            <!-- Window Materials -->
+                            <div class="tab-pane fade" id="windows-content" role="tabpanel" tabindex="0">
+                                <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="window-materials-container">
+                                    <!-- Window material items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lighting Tab -->
+                    <div class="tab-pane fade p-3" id="lighting-pane" role="tabpanel" tabindex="0">
+                        <div class="mb-3">
+                            <label class="form-label">Select Lighting Options</label>
+                            <div class="form-text mb-2">Click on a lighting option and then click in the 3D view to place it.</div>
+                        </div>
+                        <div class="custom-tab-content">
+                            <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="lighting-options-container">
+                                <!-- Lighting options -->
+                                <div class="col">
+                                    <div class="card item-card h-100" data-lighting-id="1">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-lightbulb fa-2x mb-2" style="color: #FFD700;"></i>
+                                            <p class="card-text mb-0">Warm Ceiling Light</p>
+                                            <small class="text-muted">Point Light</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="card item-card h-100" data-lighting-id="2">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-lightbulb fa-2x mb-2" style="color: #F8F8FF;"></i>
+                                            <p class="card-text mb-0">Cool White Light</p>
+                                            <small class="text-muted">Point Light</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- More lighting options -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Saved Designs Tab -->
+                    <div class="tab-pane fade p-3" id="saved-pane" role="tabpanel" tabindex="0">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="saved-customization-select" class="form-label">Your Saved Designs</label>
+                                <select class="form-select" id="saved-customization-select">
+                                    <option value="">-- Select a saved design --</option>
+                                    <option value="1">Modern Living Room - 05/01/2025</option>
+                                    <option value="2">Cozy Bedroom Setup - 05/03/2025</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" id="load-customization-btn">
+                                    <i class="fas fa-folder-open me-1"></i>Load Design
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Customization Toolbar -->
+                <div class="customization-toolbar d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-outline-secondary" type="button" onclick="window.location.reload()">
+                            <i class="fas fa-undo me-1"></i>Reset All
+                        </button>
+                    </div>
+                    <div>
+                        <button class="btn btn-success" type="button" id="save-customization-btn">
+                            <i class="fas fa-save me-1"></i>Save Design
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Customization Modal -->
+<div class="modal fade" id="saveCustomizationModal" tabindex="-1" aria-labelledby="saveCustomizationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveCustomizationModalLabel">Save Your Design</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning d-none" id="login-required-message">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    You need to be logged in to save your design. Please login or register first.
+                </div>
+                
+                <div class="mb-3">
+                    <label for="customization-name" class="form-label">Design Name</label>
+                    <input type="text" class="form-control" id="customization-name" placeholder="My Custom Design">
+                    <input type="hidden" id="customization-id">
+                </div>
+                
+                <div class="form-text">
+                    This will save your current furniture, materials, and lighting setup for this blueprint.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-save-btn">Save Design</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden model data to be used by Three.js -->
+<script type="application/json" id="model-data">
+    {{ model_data_json|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Three.js and OrbitControls -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+
+<!-- Customization script -->
+<script src="{% static 'js/customize_viewer.js' %}"></script>
+{% endblock %}

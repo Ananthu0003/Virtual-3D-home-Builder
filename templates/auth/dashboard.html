@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Blueprints{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-stats mb-4">
+            <div class="stat-card">
+                <i class="fas fa-drafting-compass fa-2x text-primary mb-2"></i>
+                <div class="stat-value">{{ blueprints|length }}</div>
+                <div class="stat-label">Total Blueprints</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-globe fa-2x text-success mb-2"></i>
+                <div class="stat-value">{{ blueprints|dictsortreversed:"created_at"|slice:":1"|length }}</div>
+                <div class="stat-label">Public Blueprints</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
+                <div class="stat-value">{{ blueprints|dictsort:"status"|slice:":1"|length }}</div>
+                <div class="stat-label">Completed Models</div>
+            </div>
+            
+            <div class="stat-card">
+                <i class="fas fa-calendar-alt fa-2x text-warning mb-2"></i>
+                <div class="stat-value">{{ blueprints.0.created_at|date:"M Y" }}</div>
+                <div class="stat-label">Since</div>
+            </div>
+        </div>
+    
+        <div class="card shadow-lg mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-drafting-compass me-2"></i>Your Blueprints</h3>
+                <a href="{% url 'home' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Upload New Blueprint
+                </a>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                <div class="messages mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if blueprints %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Public</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for blueprint in blueprints %}
+                            <tr>
+                                <td>{{ blueprint.title }}</td>
+                                <td>
+                                    {% if blueprint.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% elif blueprint.status == 'processing' %}
+                                    <span class="badge bg-info">Processing</span>
+                                    {% elif blueprint.status == 'uploaded' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% elif blueprint.status == 'failed' %}
+                                    <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ blueprint.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'toggle_public' blueprint.id %}">
+                                        {% csrf_token %}
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-public" type="checkbox" 
+                                                   role="switch" id="public-{{ blueprint.id }}" 
+                                                   {% if blueprint.is_public %}checked{% endif %}
+                                                   onchange="this.form.submit()">
+                                            <label class="form-check-label" for="public-{{ blueprint.id }}">
+                                                {{ blueprint.is_public|yesno:"Yes,No" }}
+                                            </label>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    {% if blueprint.status == 'completed' %}
+                                    <a href="{% url 'viewer' blueprint.id %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                    <a href="{% url 'customize' blueprint.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-paint-brush me-1"></i>Customize
+                                    </a>
+                                    {% elif blueprint.status == 'processing' %}
+                                    <a href="{% url 'processing' blueprint.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-spinner me-1"></i>Check Status
+                                    </a>
+                                    {% elif blueprint.status == 'uploaded' %}
+                                    <a href="{% url 'processing' blueprint.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-cogs me-1"></i>Process
+                                    </a>
+                                    {% endif %}
+                                    <!-- Delete Button -->
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ blueprint.id }}">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                    
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteModal{{ blueprint.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ blueprint.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="post" action="{% url 'delete_blueprint' blueprint.id %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ blueprint.id }}">Confirm Deletion</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to delete "{{ blueprint.title }}"?</p>
+                                                        <p class="text-danger">This action cannot be undone.</p>
+                                                        <input type="hidden" name="blueprint_id" value="{{ blueprint.id }}">
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-danger">Delete Blueprint</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-drafting-compass fa-4x mb-3 text-muted"></i>
+                    <h4>You haven't uploaded any blueprints yet</h4>
+                    <p class="lead">Get started by uploading your first blueprint</p>
+                    <a href="{% url 'home' %}" class="btn btn-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Blueprint
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
