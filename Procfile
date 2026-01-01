@@ -1,1 +1,1 @@
-web: gunicorn BlueprintTransformer.wsgi
+web: gunicorn blueprint3d.wsgi
