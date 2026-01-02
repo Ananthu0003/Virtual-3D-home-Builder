@@ -1,7 +1,7 @@
 # Virtual 3D Home Builder 🏠✨
 
 🔗 **Live Demo:**  
-https://ananthu0003.github.io/Virtual-3D-home-Builder/
+https://virtual-3d-home-builder-1.onrender.com
 
 **Virtual 3D Home Builder** is an AI-powered web application that converts **2D blueprint images** into **interactive 3D models**.  
 Users can upload blueprint scans, extract structural data, and visualize the generated 3D model directly in the browser.
@@ -28,7 +28,7 @@ This project demonstrates the integration of **AI concepts, Django backend logic
 ## 🌍 Live Demo
 
 👉 **Try it here:**  
-https://ananthu0003.github.io/Virtual-3D-home-Builder/
+https://virtual-3d-home-builder-1.onrender.com
 
 > ⚠️ *Note:*  
 > The live demo focuses on UI & visualization.  
